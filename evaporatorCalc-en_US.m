@@ -91,7 +91,7 @@ flag2 = 0;
 
 %% Main Loop
 % Since it's an iterative algorithm, it needs to run multiple times to make the effect heat transfer area converge. 
-% I know, I could just make a while loop and set a threshold for the difference of the deltaT among the iterations.
+% I know, I could just make a while loop and set a threshold for the difference of the areas among the iterations.
 % It was my first by program, so take easy :|
 
 for i = 1:5
