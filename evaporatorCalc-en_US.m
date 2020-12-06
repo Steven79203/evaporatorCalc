@@ -60,7 +60,6 @@ else
 end
 
 iU = 0;
-
 for (i = 1:n);
     iU = iU + (1/U(i));
 end
@@ -91,7 +90,11 @@ flag2 = 0;
 
 
 %% Main Loop
-for i = 1:5 % Number of iterations
+% Since it's an iterative algorithm, it needs to run multiple times to make the effect heat transfer area converge. 
+% I know, I could just make a while loop and set a threshold for the difference of the deltaT among the iterations.
+% It was my first by program, so take easy :|
+
+for i = 1:5
     %% Vapor current temperature (except 1 and 'n'th)
 
     for (i = 1:n)
@@ -142,7 +145,7 @@ for i = 1:5 % Number of iterations
     end
     
     
-    %% Vapor heat capacity
+    %% Steam Heat Capacity 
     Av = 3.47;
     Bv = 1.45E-3;
     Dv = 0.121E5;
@@ -153,13 +156,13 @@ for i = 1:5 % Number of iterations
                 Dv*((V(i,2)+273)^-1 - 273^-1 )); %kJ/kg
     end
     
-    %% Latent heat 
+    %% Latent Heat for Heating Steam 
     for i = 1:n
        V(i,4) =  2257 * ((1 - (V(i,2)+273)/(647.1))/(1-0.577))^0.38;
     end
     
     
-    %% First approximation for fsolve function
+    %% First Values Approximation for fsolve function
     x0 = zeros(2*n,1);
     
     for i = 1:n+1
