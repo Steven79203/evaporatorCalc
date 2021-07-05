@@ -30,6 +30,16 @@ DT  = zeros(1,n);    % Temperature difference along the effects
 U   = zeros(1,n);    % Global Heat Transfer Coefficients
 Q = zeros(1,n);      % Heat transfer at the effects
 
+%Antoine Parameters
+At = 11.6834;
+Bt = 3816.44;
+Ct = -46.13;
+
+%Steam heat capacity coefficients 
+Av = 3.47;
+Bv = 1.45E-3;
+Dv = 0.121E5;
+
 L(1,1)    = input('Feed current (kg/h): ');              % Feed mass flow at first effect
 L(1,2)    = input('Solid fraction at feed (m/m): ');     % Solid fraction at feed
 L(n+1,2)  = input('Solid fraction at output(m/m): ');    % Solid fraction at output (last effect)
@@ -44,14 +54,11 @@ flag1 = lower(flag1);
 %% Global Heat Coefficients
 
 if (flag1 ~= 's')
-    
     stp = 2500 - 1000;
     stp = stp/n;
-    
     for (k = 1:n)
         U(k) = 2500 - (k-1)*stp;
     end
-
 else 
     for (k = 1:n)
         fprintf("Coefficient for the %i th effect",k);
@@ -64,18 +71,13 @@ for (i = 1:n);
     iU = iU + (1/U(i));
 end
 
-
 %% Effect temperature first approximation  
-
 DeltaT = V(1,2) - V(n+1,2);
-
 for (i=1:n)
     DT(i) = (DeltaT*(1/U(i)))/iU;
 end
- 
 
 %% Initial Mass Balance
-
 L(n+1,1) = L(1,1)*L(1,2)/(L(n+1,2));
 Vt = (L(1,1) - L(n+1,1))/n;
 
@@ -87,7 +89,6 @@ end
 V(:,1) = Vt;
 
 flag2 = 0;
-
 
 %% Main Loop
 % Since it's an iterative algorithm, it needs to run multiple times to make the effect heat transfer area converge. 
@@ -113,54 +114,35 @@ for i = 1:5
         for (i = 2:n)
             iU = iU + (1/U(i));
         end
-
         
         for (i=2:n)
-            
-            DT(i) = (DeltaT*(1/U(i)))/iU;
-         
-        end
-        
+            DT(i) = (DeltaT*(1/U(i)))/iU; 
+        end    
     end
         
         
     %% Saturation Pressure
-    %Antoine Parameters
-    At = 11.6834;
-    Bt = 3816.44;
-    Ct = -46.13;
-    
     for (i = 2:n+1)
         V(i,5) = 1E2 * exp(At - (Bt/((V(i,2))+273+Ct)));
         L(i,5) = 0.8474E-2 * (L(i,2)*100)^0.9895 * exp(2.570E-2 * (L(i,2)*100))*V(i,5)^0.1163;
         L(i,3) = V(i,2) + L(i,5);
     end
  
-
-   %% Latent heat and entalphy
+    %% Latent heat and entalphy
     for i = 1:n+1
-        
         L(i,4) = (L(i,3)*(1549*L(i,2)+4176*(1-L(i,2)))+((L(i,3)^2)/2)*(1.96*L(i,2)-0.0909*(1-L(i,2)))...
             +((L(i,3)^3)/3)*(-0.00549*L(i,2)+0.00547*(1-L(i,2))))/1000; % kJ/kg
     end
-    
-    
-    %% Steam Heat Capacity 
-    Av = 3.47;
-    Bv = 1.45E-3;
-    Dv = 0.121E5;
-    
-    for i = 2:n+1
         
-        V(i,3) = 2501.3 + 0.4618 * (Av*(V(i,2)) + (Bv/2)*((V(i,2)+273)^2-273^2) - ...
-                Dv*((V(i,2)+273)^-1 - 273^-1 )); %kJ/kg
+    %% Steam Heat Capacity 
+    for i = 2:n+1
+        V(i,3) = 2501.3 + 0.4618 * (Av*(V(i,2)) + (Bv/2)*((V(i,2)+273)^2-273^2) - Dv*((V(i,2)+273)^-1 - 273^-1 )); %kJ/kg
     end
     
     %% Latent Heat for Heating Steam 
     for i = 1:n
        V(i,4) =  2257 * ((1 - (V(i,2)+273)/(647.1))/(1-0.577))^0.38;
     end
-    
     
     %% First Values Approximation for fsolve function
     x0 = zeros(2*n,1);
@@ -172,7 +154,6 @@ for i = 1:5
     for i = n+2:2*n
         x0(i) = L(i-n,1);
     end
-    
     
     %options = optimoptions('fsolve','MaxIterations',2500)
     %options = optimoptions('fsolve','FunctionTolerance',1e-12)
@@ -188,7 +169,6 @@ for i = 1:5
         L(i-n,1) = x(i);
     end
     
-    
     %% New mass balance based on the new data
     for (i = 2:n+1)
         L(i,1) = L(i-1,1) - V(i,1);
@@ -200,7 +180,6 @@ for i = 1:5
         Q(i) = V(i,4)*V(i,1)*(1/3600);
         A(i) = 1000*Q(i)/((DT(i) - L(i+1,5))*U(i));
     end
-    
     
     %% DeltaT recalculation
     if (flag2 == 0)
